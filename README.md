@@ -1,38 +1,19 @@
 
 # ![Apple Logo](https://github.com/najirh/Apple-Retail-Sales-SQL-Project---Analyzing-Millions-of-Sales-Rows/blob/main/Apple_Changsha_RetailTeamMembers_09012021_big.jpg.slideshow-xlarge_2x.jpg) Apple Retail Sales SQL Project - Analyzing Millions of Sales Rows
 
-**Get the guided project/datasets here**: [Get the Project Datasets](https://topmate.io/zero_analyst/1237072)
-
 ## Project Overview
 
-This project is designed to showcase advanced SQL querying techniques through the analysis of over 1 million rows of Apple retail sales data. The dataset includes information about products, stores, sales transactions, and warranty claims across various Apple retail locations globally. By tackling a variety of questions, from basic to complex, you'll demonstrate your ability to write sophisticated SQL queries that extract valuable insights from large datasets.
-
-The project is ideal for data analysts looking to enhance their SQL skills by working with a large-scale dataset and solving real-world business questions.
+This project is designed to showcase advanced SQL querying techniques through the analysis of over 1 million rows of Apple retail sales data. The dataset includes information about products, stores, sales transactions, and warranty claims across various Apple retail locations globally. By tackling a variety of questions, from basic to complex, I've demonstrated my ability to write sophisticated SQL queries that extract valuable insights from large datasets.
 
 ## Entity Relationship Diagram (ERD)
 
 ![ERD](https://github.com/najirh/Apple-Retail-Sales-SQL-Project---Analyzing-Millions-of-Sales-Rows/blob/main/erd.png)
 
-**Get the guided project/datasets here**: [Get the Project Datasets](https://topmate.io/zero_analyst/1237072)
-
-Here’s the shortened and improved version of the "What’s Included" and "Why Choose This Project" sections, along with the link:
-
 ---
 
-### What’s Included:
-- **100 SQL Practice Problems**: Extensive coverage of major SQL topics for mastering concepts with real-world data.
-- **20 Advanced SQL Queries**: Step-by-step solutions for complex queries, enhancing your skills in performance tuning and optimization.
-- **5 Detailed Tables**: Comprehensive datasets with over 1 million rows, including sales, stores, product categories, products, and warranties.
-- **Query Performance Tuning**: Learn to optimize queries for real-world data handling.
-- **Portfolio-Ready Project**: Showcase your SQL expertise through large-scale data analysis.
-
-### Why Choose This Project?
+### Why I Chose This Project?
 - **Hands-on Learning**: Practical experience with complex datasets and advanced business problem-solving.
-- **Comprehensive Coverage**: Each table provides new opportunities to explore SQL concepts.
-- **Exceptional Value**: For just **$9**, access 100 SQL problems, 20 advanced query solutions, and a real-world project.
-- **Limited Offer**: Special price available for the **first 100 students**!
-
-**Get the guided project/datasets here**: [Get the Project Datasets](https://topmate.io/zero_analyst/1237072)
+- **Comprehensive Coverage**: Comprehensive datasets with over 1 million rows, including sales, stores, product categories, products, and warranties. Each table has provided new opportunities for me to hone in on SQL concepts. 100 SQL problems, 20 advanced query solutions, and a real-world project.
 
 ## Database Schema
 
@@ -72,8 +53,6 @@ The project uses five main tables:
 
 The project is split into three tiers of questions to test SQL skills of increasing complexity:
 
-### 
-
 1. Find the number of stores in each country.
 ```sql
    select 
@@ -83,35 +62,356 @@ from stores
 group by(1)
 order by(2) desc;
 ```
-3. Calculate the total number of units sold by each store.
-4. Identify how many sales occurred in December 2023.
-5. Determine how many stores have never had a warranty claim filed.
-6. Calculate the percentage of warranty claims marked as "Warranty Void".
-7. Identify which store had the highest total units sold in the last year.
-8. Count the number of unique products sold in the last year.
-9. Find the average price of products in each category.
-10. How many warranty claims were filed in 2020?
-11. For each store, identify the best-selling day based on highest quantity sold.
+2. Calculate the total number of units sold by each store.
+```sql
+select
+	s.store_id,
+	st.store_name,
+	sum (s.quantity) as total_unit_sold
+from sales as s
+join stores as st
+on st.store_id = s.store_id
+group by 1, 2
+order by 3 desc;
 
-### Medium to Hard (5 Questions)
-
+```
+3. Identify how many sales occurred in December 2023.
+```sql
+select 
+	count(sale_id) as total_sale
+from sales
+where to_char(sale_date,'mm-yyyy') = '12-2023';
+```
+4. Determine how many stores have never had a warranty claim filed.
+```sql
+select count(*) from stores
+where store_id not in (
+						select 
+							distinct store_id
+						from sales as s
+						right join warranty as w
+						on s.sale_id = w.sale_id
+						);
+```
+5. Calculate the percentage of warranty claims marked as "Warranty Void".
+```sql
+select
+	round
+		(count(claim_id)/
+						(select count(*) from warranty)::numeric
+		* 100,
+	2) as warranty_void_percentage
+from warranty
+where repair_status = 'Warranty Void';
+```
+6. Identify which store had the highest total units sold in the last year.
+```sql
+select
+	round
+		(count(claim_id)/
+						(select count(*) from warranty)::numeric
+		* 100,
+	2) as warranty_void_percentage
+from warranty
+where repair_status = 'Warranty Void';
+```
+7. Count the number of unique products sold in the last year.
+```sql
+select 
+	count(distinct product_id)
+from sales 
+where sale_date >= (current_date - interval '1 year');
+```
+8. Find the average price of products in each category.
+```sql
+select
+	p.category_id,
+	c.category_name,
+	avg(p.price) as average_price
+from products as p
+join
+category as c
+on p.category_id = c.category_id
+group by 1, 2
+order by 3 desc;
+```
+9. How many warranty claims were filed in 2020?
+```sql
+select
+	count(*) as warranty_claim
+from warranty
+where extract(year from claim_date) = 2020;
+```
+10. For each store, identify the best-selling day based on highest quantity sold.
+```sql
+select *
+from 
+(
+	select
+		store_id,
+		to_char(sale_date, 'Day') as day_name,
+		sum(quantity) as total_units_sold,
+		rank() over(partition by store_id order by sum(quantity) desc) as rank
+	from sales
+	group by 1,2
+) as tl
+where rank = 1;
+```
 11. Identify the least selling product in each country for each year based on total units sold.
+```sql
+with product_rank
+as
+(
+select
+	st.country,
+	p.product_name,
+	sum(s.quantity) as total_qty_sold,
+	rank() over(partition by st.country order by sum(s.quantity)) as rank
+from sales as s
+join 
+stores as st
+on s.store_id = st.store_id
+join
+products as p
+on s.product_id = p.product_id
+group by 1,2
+)
+select
+*
+from product_rank
+where rank = 1;
+```
 12. Calculate how many warranty claims were filed within 180 days of a product sale.
+```sql
+select
+	count(*)
+from warranty as w
+left join
+sales as s
+on s.sale_id = w.sale_id
+where
+	w.claim_date - sale_date <=180;
+```
 13. Determine how many warranty claims were filed for products launched in the last two years.
+```sql
+select
+	p.product_name,
+	count(w.claim_id)as no_claim,
+	count(s.sale_id)
+from warranty as w
+right join
+sales as s
+on s.sale_id = w.sale_id
+join
+products as p
+on p.product_id = s.product_id
+where p.launch_date >= current_date - interval '2 years'
+group by 1
+having count(w.claim_id) > 0;
+```
 14. List the months in the last three years where sales exceeded 5,000 units in the USA.
+```sql
+select
+	to_char(sale_date, 'MM-YYY') as month,
+	sum(s.quantity) as total_units_sold
+from sales as s
+join
+stores as st
+on s.store_id = st.store_id
+where
+	st.country = 'USA'
+	and
+	s.sale_date >= current_date - interval '3 year'
+group by 1
+having sum(s.quantity) >= 5000;
+```
 15. Identify the product category with the most warranty claims filed in the last two years.
-
-### Complex (5 Questions)
-
+```sql
+select
+	c.category_name,
+	count(w.claim_id) as total_claims
+from warranty as w
+left join
+sales as s
+on w.sale_id = s.sale_id
+join products as p
+on p.product_id = s.product_id
+join category as c
+on c.category_id = p.category_id
+where
+	w.claim_date >= current_date - interval '2 years'
+group by 1;
+```
 16. Determine the percentage chance of receiving warranty claims after each purchase for each country.
+```sql
+select
+	country,
+	total_units_sold,
+	total_claim,
+	coalesce(total_claim::numeric/total_units_sold::numeric * 100, 0)
+	as risk
+from
+(select
+	st.country,
+	sum(s.quantity) as total_units_sold,
+	count(w.claim_id) as total_claim
+from sales as s
+join stores as st
+on s.store_id = st.store_id
+left join warranty as w
+on w.sale_id = s.sale_id
+group by 1) t1
+order by 4 desc;
+```
 17. Analyze the year-by-year growth ratio for each store.
+```sql
+-- each store and their yearly sale 
+WITH yearly_sales
+AS
+(
+	SELECT 
+		s.store_id,
+		st.store_name,
+		EXTRACT(YEAR FROM sale_date) as year,
+		SUM(s.quantity * p.price) as total_sale
+	FROM sales as s
+	JOIN
+	products as p
+	ON s.product_id = p.product_id
+	JOIN stores as st
+	ON st.store_id = s.store_id
+	GROUP BY 1, 2, 3
+	ORDER BY 2, 3 
+),
+growth_ratio
+AS
+(
+SELECT 
+	store_name,
+	year,
+	LAG(total_sale, 1) OVER(PARTITION BY store_name ORDER BY year) as last_year_sale,
+	total_sale as current_year_sale
+FROM yearly_sales
+)
+
+SELECT 
+	store_name,
+	year,
+	last_year_sale,
+	current_year_sale,
+	ROUND(
+			(current_year_sale - last_year_sale)::numeric/
+							last_year_sale::numeric * 100
+	,3) as growth_ratio
+FROM growth_ratio
+WHERE 
+	last_year_sale IS NOT NULL
+	AND 
+	YEAR <> EXTRACT(YEAR FROM CURRENT_DATE)
+```
 18. Calculate the correlation between product price and warranty claims for products sold in the last five years, segmented by price range.
+```sql
+-- products sold in the last five years, segmented by price range.
+
+SELECT 
+	
+	CASE
+		WHEN p.price < 500 THEN 'Less Expenses Product'
+		WHEN p.price BETWEEN 500 AND 1000 THEN 'Mid Range Product'
+		ELSE 'Expensive Product'
+	END as price_segment,
+	COUNT(w.claim_id) as total_Claim
+FROM warranty as w
+LEFT JOIN
+sales as s
+ON w.sale_id = s.sale_id
+JOIN 
+products as p
+ON p.product_id = s.product_id
+WHERE claim_date >= CURRENT_DATE - INTERVAL '5 year'
+GROUP BY 1
+```
 19. Identify the store with the highest percentage of "Paid Repaired" claims relative to total claims filed.
+```sql
+WITH paid_repair
+AS
+(SELECT 
+	s.store_id,
+	COUNT(w.claim_id) as paid_repaired
+FROM sales as s
+RIGHT JOIN warranty as w
+ON w.sale_id = s.sale_id
+WHERE w.repair_status = 'Paid Repaired'
+GROUP BY 1
+),
+
+total_repaired
+AS
+(SELECT 
+	s.store_id,
+	COUNT(w.claim_id) as total_repaired
+FROM sales as s
+RIGHT JOIN warranty as w
+ON w.sale_id = s.sale_id
+GROUP BY 1)
+
+SELECT 
+	tr.store_id,
+	st.store_name,
+	pr.paid_repaired,
+	tr.total_repaired,
+	ROUND(pr.paid_repaired::numeric/
+			tr.total_repaired::numeric * 100
+		,2) as percentage_paid_repaired
+FROM paid_repair as pr
+JOIN 
+total_repaired tr
+ON pr.store_id = tr.store_id
+JOIN stores as st
+ON tr.store_id = st.store_id
+```
 20. Write a query to calculate the monthly running total of sales for each store over the past four years and compare trends during this period.
-
-### Bonus Question
-
-- Analyze product sales trends over time, segmented into key periods: from launch to 6 months, 6-12 months, 12-18 months, and beyond 18 months.
+```sql
+WITH monthly_sales
+AS
+(SELECT 
+	store_id,
+	EXTRACT(YEAR FROM sale_date) as year,
+	EXTRACT(MONTH FROM sale_date) as month,
+	SUM(p.price * s.quantity) as total_revenue
+FROM sales as s
+JOIN 
+products as p
+ON s.product_id = p.product_id
+GROUP BY 1, 2, 3
+ORDER BY 1, 2,3
+)
+SELECT 
+	store_id,
+	month,
+	year,
+	total_revenue,
+	SUM(total_revenue) OVER(PARTITION BY store_id ORDER BY year, month) as running_total
+FROM monthly_sales
+```
+21. Analyze product sales trends over time, segmented into key periods: from launch to 6 months, 6-12 months, 12-18 months, and beyond 18 months.
+```sql
+SELECT 
+	p.product_name,
+	CASE 
+		WHEN s.sale_date BETWEEN p.launch_date AND p.launch_date + INTERVAL '6 month' THEN '0-6 month'
+		WHEN s.sale_date BETWEEN  p.launch_date + INTERVAL '6 month'  AND p.launch_date + INTERVAL '12 month' THEN '6-12' 
+		WHEN s.sale_date BETWEEN  p.launch_date + INTERVAL '12 month'  AND p.launch_date + INTERVAL '18 month' THEN '6-12'
+		ELSE '18+'
+	END as plc,
+	SUM(s.quantity) as total_qty_sale
+	
+FROM sales as s
+JOIN products as p
+ON s.product_id = p.product_id
+GROUP BY 1, 2
+ORDER BY 1, 3 DESC 
+```
 
 ## Project Focus
 
@@ -132,6 +432,6 @@ This project primarily focuses on developing and showcasing the following SQL sk
 
 ## Conclusion
 
-By completing this project, you will develop advanced SQL querying skills, improve your ability to handle large datasets, and gain practical experience in solving complex data analysis problems that are crucial for business decision-making. This project is an excellent addition to your portfolio and will demonstrate your expertise in SQL to potential employers.
+By completing this project, I have developed advanced SQL querying skills, improved my ability to handle large datasets, and gained practical experience in solving complex data analysis problems that are crucial for business decision-making.
 
 ---
