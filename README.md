@@ -72,9 +72,17 @@ The project uses five main tables:
 
 The project is split into three tiers of questions to test SQL skills of increasing complexity:
 
-### Easy to Medium (10 Questions)
+### 
 
 1. Find the number of stores in each country.
+***sql
+   select 
+	country,
+	count(store_id) as total_stores
+from stores
+group by(1)
+order by(2) desc;
+***
 2. Calculate the total number of units sold by each store.
 3. Identify how many sales occurred in December 2023.
 4. Determine how many stores have never had a warranty claim filed.
