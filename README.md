@@ -1,5 +1,5 @@
 # ![Apple_Changsha_RetailTeamMembers_09012021_big jpg slideshow-xlarge_2x](https://github.com/user-attachments/assets/3c0c7fe9-7dff-4ca6-8487-952168345c93)
-##### Apple Retail Sales SQL Project - Analyzing Millions of Sales Rows
+#### Apple Retail Sales SQL Project - Analyzing Millions of Sales Rows
 
 ## Project Overview
 
